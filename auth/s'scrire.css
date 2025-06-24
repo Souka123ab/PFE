@@ -1,0 +1,255 @@
+ * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            display: flex;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            height: 150vh;
+            align-items: center;
+            justify-content: space-between;
+            gap: 33px;
+        }
+
+        .left-panel {
+            
+   width: 33%;
+    background: white;
+    padding: 40px;
+    display: flex
+;
+    flex-direction: column;
+    justify-content: center;
+   
+    /* margin-bottom: -122px; */
+}
+       
+
+        .right-panel {
+           width: 46%;
+            
+        }
+        .right-panel img{
+            width: 100%;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            /* margin-top: 9px; */
+        }
+
+        .logo img {
+           width: 45%;
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 600;
+            color: #2C3E50;
+        }
+
+        .login-link {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .login-link a {
+            color: #4ECDC4;
+            text-decoration: none;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .form-title {
+            font-size: 32px;
+            font-weight: 600;
+            color: #2C3E50;
+            margin-bottom: 30px;
+        }
+
+        .google-btn {
+            width: 100%;
+            padding: 12px 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-size: 16px;
+            color: #333;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: border-color 0.2s;
+        }
+
+        .google-btn:hover {
+            border-color: #4ECDC4;
+        }
+
+        .google-icon {
+            width: 20px;
+            height: 20px;
+            background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEwLjIgOC4xVjEySDEzLjlDMTMuNyAxMy4xIDEzLjEgMTMuOSAxMi4yIDE0LjNMMTUuMSAxNi42QzE3IDE0LjkgMTggMTIuNiAxOCAxMEMxOCA5LjQgMTcuOSA4LjggMTcuOCA4LjFIMTAuMloiIGZpbGw9IiM0Mjg1RjQiLz4KPHBhdGggZD0iTTEwIDIwQzEyLjcgMjAgMTQuOSAxOS4xIDE2LjUgMTcuNEwxMy42IDE1LjFDMTIuNyAxNS43IDExLjUgMTYgMTAgMTZDNy40IDE2IDUuMiAxNC4zIDQuNCAxMkwxLjMgMTQuNEM3LjkgMjAuNSAxMCAyMCAxMCAyMFoiIGZpbGw9IiMzNEE4NTMiLz4KPHBhdGggZD0iTTQuNCA4QzQuMiA3LjQgNC4xIDYuNyA0LjEgNkM0LjEgNS4zIDQuMiA0LjYgNC40IDRMMS4zIDEuNkMwLjUgMy4xIDAgNC41IDAgNkMwIDcuNSAwLjUgOC45IDEuMyAxMC40TDQuNCA4WiIgZmlsbD0iI0ZCQkMwNSIvPgo8cGF0aCBkPSJNMTAgNEMxMS42IDQgMTMgNC42IDE0LjEgNS42TDE2LjggMi45QzE1IDEuMiAxMi43IDAgMTAgMEM3LjkgMCA1LjkgMC45IDQuNCAyLjRMNy41IDQuOEM4LjMgMi43IDkuMSA0IDEwIDRaIiBmaWxsPSIjRUE0MzM1Ii8+Cjwvc3ZnPgo=') no-repeat center;
+            background-size: contain;
+        }
+
+        .divider {
+            text-align: center;
+            /* margin: 20px 0; */
+            color: #999;
+            font-size: 14px;
+            position: relative;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 45%;
+            height: 1px;
+            background: #ddd;
+        }
+
+        .divider::before {
+            left: 0;
+        }
+
+        .divider::after {
+            right: 0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #4ECDC4;
+        }
+
+        .form-input::placeholder {
+            color: #999;
+        }
+
+        .password-container {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #999;
+            font-size: 18px;
+        }
+
+        .password-dots {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ddd;
+        }
+
+        .dot.active {
+            background: #4ECDC4;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: #4ECDC4;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.2s;
+        }
+
+        .submit-btn:hover {
+            background: #45B7B8;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .right-panel {
+                display: none;
+            }
+            
+            .left-panel {
+                max-width: none;
+                padding: 20px;
+            }
+        } .error-message {
+            display: none;
+            color: #ff0000;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        .error-message.active {
+            display: block;
+        }
+        .server-message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .server-message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .server-message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }

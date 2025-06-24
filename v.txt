@@ -1,0 +1,6 @@
+ <div class="v2">
+        <p>Plus d’annonces</p>
+        <div class="v3">
+            <a href="#" class="view-all-link"><i class="fas fa-arrow-left"></i></a>
+            <a href="#" class="view-all-link"><i class="fas fa-arrow-right"></i></a>
+        </div>
