@@ -37,6 +37,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_SESSION['user_id'] = $user['user_id'];
                 $_SESSION['nom'] = $user['nom'];
                 $_SESSION['email'] = $user['email'];
+                $_SESSION['is_provider'] = $user['is_provider'] ?? 0; // Assurez-vous que cette clé existe
 
                 header("Location: ../acceuil.php");
                 exit;

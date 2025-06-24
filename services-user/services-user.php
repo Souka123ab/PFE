@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '/xampp/htdocs/PFE/include/conexion.php';
+require_once '/xamppa/htdocs/PFE/include/conexion.php';
 
 // Redirection si l'utilisateur n'est pas connecté
 if (!isset($_SESSION['user_id'])) {
@@ -15,9 +15,9 @@ $stmt->execute([$user_id]);
 $is_prestataire = $stmt->fetchall();
 
 // Debugging line to check if the user is a prestataire
-foreach ($is_prestataire as $ishg){
-    var_dump($ishg["date"]);
-}
+// foreach ($is_prestataire as $ishg){
+//     var_dump($ishg["date"]);
+// }
 
 if (isset($_SESSION['service_ajoute'])) {
     echo "<p style='color: green;'>Service \"" . htmlspecialchars($_SESSION['service_ajoute']['titre']) . "\" ajouté le " . htmlspecialchars($_SESSION['service_ajoute']['date']) . ".</p>";

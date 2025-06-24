@@ -1,14 +1,31 @@
 <?php
 session_start();
-require_once '/xampp/htdocs/PFE/include/conexion.php';
+require_once '/xamppa/htdocs/PFE/include/conexion.php';
 
-// Rediriger vers la page de connexion si l'utilisateur n'est pas connecté
+// Vérifie si l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
     header("Location: /PFE/auth/seconnecter.php");
     exit;
 }
 
-// Traitement du formulaire de mise à jour
+// 👉 Traitement si l'utilisateur veut devenir prestataire
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['become_provider'])) {
+    try {
+        $stmt = $pdo->prepare("UPDATE _user SET is_provider = 1 WHERE user_id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+
+        // Met à jour la session
+        $_SESSION['is_prestataire'] = true;
+
+        // Redirige vers la page du compte prestataire
+        header("Location: /PFE/pestataire/pestataire-compte.php");
+        exit;
+    } catch (PDOException $e) {
+        echo "<p style='color:red;'>Erreur : " . htmlspecialchars($e->getMessage()) . "</p>";
+    }
+}
+
+// 👉 Traitement du formulaire de mise à jour du profil
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['update_profile'])) {
     $nom = $_POST['nom'] ?? '';
     $numero = $_POST['numero'] ?? '';
@@ -24,31 +41,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['update_profile'])) {
     }
 }
 
-// Récupérer les infos de l'utilisateur
+// 👉 Récupération des infos utilisateur
 $user = [];
 try {
     $stmt = $pdo->prepare("SELECT * FROM _user WHERE user_id = ?");
     $stmt->execute([$_SESSION['user_id']]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    // Mise à jour de la session
+    $_SESSION['is_prestataire'] = ($user['is_provider'] ?? 0) == 1 ? true : false;
+
     if (empty($user['nom']) && isset($_SESSION['nom'])) {
         $user['nom'] = $_SESSION['nom'];
     }
 } catch (PDOException $e) {
     echo "<p style='color:red;'>Erreur : " . htmlspecialchars($e->getMessage()) . "</p>";
-}
-
-// Vérifie s'il est prestataire
-$isProvider = $user['is_provider'] ?? 0;
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['become_provider'])) {
-    try {
-        $stmt = $pdo->prepare("UPDATE _user SET is_provider = 1 WHERE user_id = ?");
-        $stmt->execute([$_SESSION['user_id']]);
-        header("Location: /PFE/pestataire/pestataire-compte.php");
-        exit;
-    } catch (PDOException $e) {
-        echo "<p style='color:red;'>Erreur : " . htmlspecialchars($e->getMessage()) . "</p>";
-    }
 }
 ?>
 
@@ -72,7 +79,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['become_provider'])) {
                 </div>
                 <h2>Bienvenue, <?php echo htmlspecialchars($user['nom'] ?? 'Utilisateur'); ?>!</h2>
 
-                <?php if (!$isProvider): ?>
+                <?php if (!$_SESSION['is_prestataire']): ?>
                     <form method="post" style="display:inline;">
                         <button type="submit" name="become_provider" class="become-provider-btn">Devenir Prestataire</button>
                     </form>

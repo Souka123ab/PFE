@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '/xampp/htdocs/PFE/include/conexion.php';
+require_once '/xamppa/htdocs/PFE/include/conexion.php';
 
 // Redirect if not logged in
 if (!isset($_SESSION['user_id'])) {

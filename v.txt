@@ -4,3 +4,28 @@
             <a href="#" class="view-all-link"><i class="fas fa-arrow-left"></i></a>
             <a href="#" class="view-all-link"><i class="fas fa-arrow-right"></i></a>
         </div>
+
+
+
+        
+$isProvider = $user['is_provider'] ?? 0;
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['become_provider'])) {
+    try {
+        $stmt = $pdo->prepare("UPDATE _user SET is_provider = 1 WHERE user_id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        header("Location: /PFE/pestataire/pestataire-compte.php");
+        exit;
+    } catch (PDOException $e) {
+        echo "<p style='color:red;'>Erreur : " . htmlspecialchars($e->getMessage()) . "</p>";
+    }
+}
+
+
+    <?php if ($isProvider === 0): ?>
+                    <form method="post" style="display:inline;">
+                        <button type="submit" name="become_provider" class="become-provider-btn">Devenir Prestataire</button>
+                    </form>
+                <?php else: ?>
+                    <p>Vous êtes déjà un prestataire. <a href="/PFE/pestataire/pestataire-compte.php">Voir votre profil prestataire</a></p>
+                <?php endif; ?>
+            </div>

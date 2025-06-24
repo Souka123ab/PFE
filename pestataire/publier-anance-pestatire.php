@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'C:/xampp/htdocs/PFE/include/conexion.php'; // Adjusted path for consistency
+require_once 'C:/xamppa/htdocs/PFE/include/conexion.php'; // Adjusted path for consistency
 
 // Redirect if user is not logged in
 if (!isset($_SESSION['user_id'])) {
@@ -51,7 +51,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
         $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
         if (in_array($_FILES['photo']['type'], $allowed_types)) {
-            $upload_dir = 'C:/xampp/htdocs/PFE/uploads/';
+            $upload_dir = 'C:/xamppa/htdocs/PFE/uploads/';
             if (!file_exists($upload_dir)) {
                 mkdir($upload_dir, 0777, true);
             }

@@ -1,14 +1,24 @@
 <?php
 session_start();
-require_once '/xampp/htdocs/PFE/include/conexion.php';
+require_once '/xamppa/htdocs/PFE/include/conexion.php';
 
 // Redirection si l'utilisateur n'est pas connecté
+
 if (!isset($_SESSION['user_id'])) {
     header("Location: /PFE/auth/seconnecter.php");
     exit;
 }
+if(isset($_GET['id_service'])){
+   $id_service = $_GET['id_service'];
+   $stmt = $pdo->prepare("SELECT * FROM service WHERE id_service = ?");
+   $stmt->execute([$id_service]);
+   $service = $stmt->fetch(PDO::FETCH_ASSOC);
+}else {
+ header("Location: /PFE/services-user/services-user.php");
+exit;
+}
 
-$user_id = $_SESSION['user_id'];
+
 
 // Récupération via URL
 $category = $_GET['service_name'] ?? '';

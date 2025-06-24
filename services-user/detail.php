@@ -1,5 +1,5 @@
 <?php
-require_once '/xampp/htdocs/PFE/include/conexion.php';
+require_once '/xamppa/htdocs/PFE/include/conexion.php';
 session_start();
 
 // Redirect to login if user is not logged in

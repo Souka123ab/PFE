@@ -20,9 +20,6 @@ if (session_status() === PHP_SESSION_NONE) {
             <div class="header-content">
                 <!-- Navigation avec Logo -->
                 <nav class="nav">
-                    <!-- Hamburger Menu -->
-
-
                     <div class="logo">
                         <img src="/PFE/image/Capture d'écran 2025-06-16 131020.png" alt="Souka.ma Logo" class="logo-img">
                     </div>
@@ -43,16 +40,20 @@ if (session_status() === PHP_SESSION_NONE) {
                 <!-- Actions Header -->
                 <div class="header-actions">
                     <button class="notification-btn">
-                        
                         <i class="fas fa-bell"></i>
                     </button>
 
-                    <?php if (isset($_SESSION['user_id'])): ?>
-                        <button class="btnn btn-primary">
-                            <a href="/PFE/pestataire/publier-anance-pestatire.php">
-                            <i class="fas fa-plus"></i>
-                            Publier une annonce
-                        </button>
+                   <?php if (isset($_SESSION['user_id'])): ?>
+    <?php if (!empty($_SESSION['is_prestataire']) && $_SESSION['is_prestataire'] === true): ?>
+        <button class="btnn btn-primary">
+            <a href="/PFE/pestataire/publier-anance-pestatire.php">
+                <i class="fas fa-plus"></i> Publier une annonce
+            </a>
+        </button>
+    <?php endif; ?>
+
+
+                       
                         <button class="btnn btn-secondary">
                             <a href="/PFE/Favourite/favourite.php">
                                 <i class="fas fa-heart"></i>
@@ -73,47 +74,41 @@ if (session_status() === PHP_SESSION_NONE) {
                             </a>
                         </button>
                     <?php endif; ?>
-                     <button class="hamburger" id="hamburger">
-                 <i class="fas fa-bars"></i>
-                </button>
+                    <button class="hamburger" id="hamburger">
+                        <i class="fas fa-bars"></i>
+                    </button>
                 </div>
-                 
             </div>
-             
         </div>
-      
     </header>
 
     <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const navLinks = document.querySelectorAll('.nav-link');
-        navLinks.forEach(function(link) {
-          link.addEventListener('click', function() {
-            navLinks.forEach(function(l) {
-              l.classList.remove('active');
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(function(link) {
+                link.addEventListener('click', function() {
+                    navLinks.forEach(function(l) {
+                        l.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                });
             });
-            this.classList.add('active');
-          });
         });
-      });
-     
-  document.addEventListener('DOMContentLoaded', function () {
-    const hamburger = document.getElementById('hamburger');
-    const nav = document.querySelector('.nav');
 
-    hamburger.addEventListener('click', function () {
-      nav.classList.toggle('active');
-    });
+        document.addEventListener('DOMContentLoaded', function () {
+            const hamburger = document.getElementById('hamburger');
+            const nav = document.querySelector('.nav');
 
-    // Facultatif : Fermer le menu quand on clique sur un lien
-    document.querySelectorAll('.nav-link').forEach(link => {
-      link.addEventListener('click', () => {
-        nav.classList.remove('active');
-      });
-    });
-  });
+            hamburger.addEventListener('click', function () {
+                nav.classList.toggle('active');
+            });
 
-
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', () => {
+                    nav.classList.remove('active');
+                });
+            });
+        });
     </script>
 </body>
 </html>
