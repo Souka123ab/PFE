@@ -78,7 +78,7 @@ if (!isset($_SESSION['user_id'])) {
                                    WHERE u.is_provider = 1 
                                    LIMIT 4");
                 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                    $avatar = "image/default-avatar.png";
+                    $avatar = "/PFE/image/human.png";
                     $nom = $row['nom'];
                     $ville = $row['ville'];
                     $titre_service = $row['titre'] ?? 'Aucun service';

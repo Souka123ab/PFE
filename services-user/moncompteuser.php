@@ -84,7 +84,9 @@ try {
                         <button type="submit" name="become_provider" class="become-provider-btn">Devenir Prestataire</button>
                     </form>
                 <?php else: ?>
-                    <p>Vous êtes déjà un prestataire. <a href="/PFE/pestataire/pestataire-compte.php">Voir votre profil prestataire</a></p>
+                    <div class="pestataire">
+                            <p>Vous êtes déjà un prestataire. <a href="/PFE/pestataire/pestataire-compte.php">Voir votre profil prestataire</a></p>
+                    </div>
                 <?php endif; ?>
             </div>
 

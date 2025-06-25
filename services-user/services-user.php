@@ -246,7 +246,9 @@ if (empty($services)) {
                         echo '</div>';
 
                         echo '<div class="service-content"><div class="provider-info">';
-                        echo '<img src="/placeholder.svg" alt="Provider" class="provider-avatar">';
+                        echo '<div class="profile-avatar">
+                    <div class="avatar-placeholder"><i class="fas fa-user"></i></div>
+                </div>';
                         echo '<div><h4>' . htmlspecialchars($provider_name) . '</h4><div class="rating"><span class="stars">★★★★★</span><span class="rating-count">4.8</span></div></div>';
                         echo '</div>';
 
@@ -278,70 +280,6 @@ if (empty($services)) {
 
     <?php require_once '../include/footer.html'; ?>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const keywordInput = document.getElementById('search-keyword');
-        const searchButton = document.querySelector('.btn-search');
-        const serviceBoxes = document.querySelectorAll('.service-box');
-        const categoryItems = document.querySelectorAll('.category-item');
-        const serviceSections = document.querySelectorAll('.service-section');
-
-        function normalize(str) {
-            return str.trim().toLowerCase();
-        }
-
-        function filterServices() {
-            const keyword = normalize(keywordInput.value);
-
-            serviceBoxes.forEach(box => {
-                const title = box.dataset.title;
-                const matchesKeyword = !keyword || title.includes(keyword);
-
-                if (matchesKeyword) {
-                    box.style.display = 'block';
-                } else {
-                    box.style.display = 'none';
-                }
-            });
-        }
-
-        function filterByCategory(category) {
-            serviceSections.forEach(section => {
-                const sectionCategory = section.dataset.category;
-                if (category === 'all' || sectionCategory === category) {
-                    section.style.display = 'block';
-                } else {
-                    section.style.display = 'none';
-                }
-            });
-
-            // Réinitialiser la recherche par mot-clé
-            keywordInput.value = '';
-            filterServices(); // Appliquer le filtrage pour afficher tous les services visibles
-        }
-
-        // Filtrage par mot-clé au clic sur le bouton de recherche
-        searchButton.addEventListener('click', filterServices);
-
-        // Filtrage par catégorie au clic sur une catégorie
-        categoryItems.forEach(item => {
-            item.addEventListener('click', () => {
-                const category = item.dataset.category;
-                filterByCategory(category);
-            });
-        });
-
-        // Prevent action buttons from triggering the service card link
-        document.querySelectorAll('.btn-edit, .btn-delete, .btn-favorite, .btn-demander, .btn-detail').forEach(button => {
-            button.addEventListener('click', (event) => {
-                event.stopPropagation();
-                const href = button.getAttribute('data-href') || button.getAttribute('href');
-                if (href) {
-                    window.location.href = href;
-                }
-            });
-        });
-    });
-    </script>
+    <script src="/services-user/services-user.js"></script>
 </body>
 </html>

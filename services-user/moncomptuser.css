@@ -130,6 +130,10 @@ body {
     appearance: none;
     cursor: pointer;
 }
+.pestataire a{
+    color: #1a9b94;
+    text-decoration: none;
+}
 
 .update-btn {
     width: 100%;

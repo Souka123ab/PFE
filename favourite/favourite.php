@@ -12,19 +12,29 @@ if (isset($_GET['id_service'])) {
     $user_id = $_SESSION['user_id'];
     $id_service = intval($_GET['id_service']);
 
-    // Check if the service is already in favorites
-    $stmt = $pdo->prepare("SELECT * FROM favoris WHERE user_id = ? AND service_id = ?");
+    // Check if the service already exists in favorites
+    $stmt = $pdo->prepare("SELECT * FROM favoris WHERE user_id = ? AND id_service = ?");
     $stmt->execute([$user_id, $id_service]);
     $exists = $stmt->fetch();
 
     if (!$exists) {
-        $insert = $pdo->prepare("INSERT INTO favoris (user_id, service_id) VALUES (?, ?)");
-        $insert->execute([$user_id, $id_service]);
+        // Check if the service exists in the service table
+        $checkService = $pdo->prepare("SELECT id_service FROM service WHERE id_service = ?");
+        $checkService->execute([$id_service]);
+
+        if ($checkService->rowCount() > 0) {
+            $insert = $pdo->prepare("INSERT INTO favoris (user_id, id_service) VALUES (?, ?)");
+            $insert->execute([$user_id, $id_service]);
+        } else {
+            echo "<p style='color:red;'>Service non trouvé.</p>";
+        }
     }
 
-    // Redirect back to the previous page
-    header("Location: " . $_SERVER['HTTP_REFERER']);
-    exit;
+    // Redirect back
+   $redirect_url = $_SERVER['HTTP_REFERER'] ?? '/PFE/favourite/favourite.php';
+header("Location: $redirect_url");
+exit;
+
 }
 
 // Fetch favorited services
@@ -33,7 +43,7 @@ try {
     $stmt = $pdo->prepare("
         SELECT s.id_service, s.titre, s.prix, s.user_id, s.id_categorie, s.image, s.telephone, s.date, s.discription, s.ville, u.nom
         FROM service s
-        JOIN favoris f ON s.id_service = f.service_id
+        JOIN favoris f ON s.id_service = f.id_service
         JOIN _user u ON s.user_id = u.user_id
         WHERE f.user_id = ?
         ORDER BY s.date DESC
@@ -94,7 +104,7 @@ try {
         }
         .service-card h3 {
             margin: 0;
-            font-size:Anda 1.1em;
+            font-size: 1.1em;
             color: #222;
         }
         .service-card .info {
@@ -119,6 +129,7 @@ try {
         }
         .actions a.demander { background-color: #D54286; }
         .actions a.detail { background-color: #4CAF50; }
+        .actions a.remove-favorite { background-color: #f44336; }
         .no-fav {
             color: #888;
             font-size: 1.1em;
@@ -162,9 +173,15 @@ try {
                     <p class="info"><strong>Ville :</strong> <?= htmlspecialchars($service['ville'] ?? 'Non spécifiée') ?></p>
                     <p class="info"><strong>Ajouté le :</strong> <?= $service_date ?></p>
                     <div class="actions">
-                        echo '<a class="demander" href="/PFE/services-user/demander.php?service_name=' . urlencode($service['titre']) . '&id_categorie=' . $service['id_categorie'] . '&phone=' . urlencode($service['telephone']) . '&id_service=' . $service['id_service'] . '&ville=' . urlencode($service['ville'] ?? '') . '"><i class="fas fa-paper-plane"></i> Demander</a>';
-                        echo '<a class="detail" href="/PFE/services-user/detail.php?' . $params . '"><i class="fas fa-eye"></i> Détail</a>';
-                        echo '<a class="remove-favorite" href="/PFE/favourite/remove-favourite.php?id_service=' . $service['id_service'] . '"><i class="fas fa-trash"></i> Retirer</a>';
+                        <a class="demander" href="/PFE/services-user/demander.php?service_name=<?= urlencode($service['titre']) ?>&id_categorie=<?= $service['id_categorie'] ?>&phone=<?= urlencode($service['telephone']) ?>&id_service=<?= $service['id_service'] ?>&ville=<?= urlencode($service['ville'] ?? '') ?>">
+                            <i class="fas fa-paper-plane"></i> Demander
+                        </a>
+                        <a class="detail" href="/PFE/services-user/detail.php?<?= $params ?>">
+                            <i class="fas fa-eye"></i> Détail
+                        </a>
+                        <a class="remove-favorite" href="/PFE/favourite/remove-favourite.php?id_service=<?= $service['id_service'] ?>">
+                            <i class="fas fa-trash"></i> Retirer
+                        </a>
                     </div>
                 </div>
             <?php endforeach; ?>

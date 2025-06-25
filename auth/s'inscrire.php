@@ -13,6 +13,12 @@ require_once '../include/conexion.php';
 
 $success_message = '';
 $error_message = '';
+$first_name = '';
+$last_name = '';
+$email = '';
+$numero = '';
+$password = '';
+$confirm_password = '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $first_name = $_POST['firstName'] ?? '';
@@ -59,8 +65,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 ?>
-
-
 
 
 <!DOCTYPE html>
@@ -110,7 +114,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="numero">Numéro de téléphone</label>
-                    <input type="text" id="numero" name="numero" class="form-input" placeholder="Numéro de téléphone" value="<?php echo htmlspecialchars($phone_number ?? ''); ?>">
+                    <input type="text" id="numero" name="numero" class="form-input" placeholder="Numéro de téléphone" value="<?php echo htmlspecialchars($numero ?? ''); ?>">
                     <span id="numeroError" class="error-message">Veuillez entrer un numéro de téléphone valide (10 chiffres) !</span>
                 </div>
                 <div class="form-group">

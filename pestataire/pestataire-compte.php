@@ -11,19 +11,34 @@ if (!isset($_SESSION['user_id'])) {
 // Déterminer l'ID du prestataire
 $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : $_SESSION['user_id'];
 
-// Incrémenter le nombre de visites si ce n'est pas son propre profil
+// Supprimer tous les commentaires du prestataire s'il a cliqué sur le bouton
+if (isset($_GET['delete_reviews']) && $_SESSION['user_id'] == $userId) {
+    try {
+        $stmt = $pdo->prepare("DELETE FROM reviews WHERE user_id = ?");
+        $stmt->execute([$userId]);
+
+        $stmt = $pdo->prepare("UPDATE _user SET numero = 0 WHERE user_id = ?");
+        $stmt->execute([$userId]);
+
+        header("Location: ?user_id=$userId");
+        exit;
+    } catch (PDOException $e) {
+        echo "<p style='color:red;'>Erreur lors de la suppression des commentaires : " . htmlspecialchars($e->getMessage()) . "</p>";
+    }
+}
+
+// Incrémenter les vues uniquement si ce n'est pas son propre profil
 if ($userId !== $_SESSION['user_id']) {
     $stmt = $pdo->prepare("UPDATE _user SET views = views + 1 WHERE user_id = ?");
     $stmt->execute([$userId]);
 }
 
-// Fonction pour récupérer toutes les données du prestataire
+// Fonction pour charger les données
 function getProviderData($pdo, $userId) {
     $stmt = $pdo->prepare("SELECT nom, ville AS profession, numero AS comments, views, email AS about, numero AS phone FROM _user WHERE user_id = ?");
     $stmt->execute([$userId]);
     $data = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
-    // Heures d'ouverture (fixes)
     $data['hours'] = [
         'Lundi' => ['09:00 - 12:00', '14:00 - 16:00'],
         'Mardi' => ['09:00 - 12:00', '14:00 - 16:00'],
@@ -32,7 +47,6 @@ function getProviderData($pdo, $userId) {
         'Vendredi' => ['09:00 - 12:00', '14:00 - 16:00']
     ];
 
-    // Récupérer les avis
     $stmt = $pdo->prepare("SELECT reviewer_name AS name, rating, text FROM reviews WHERE user_id = ? ORDER BY created_at DESC");
     $stmt->execute([$userId]);
     $data['reviews'] = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
@@ -41,27 +55,21 @@ function getProviderData($pdo, $userId) {
 }
 
 try {
-    // Charger les données
     $providerData = getProviderData($pdo, $userId);
 
-    // Soumission d'un commentaire
     if (isset($_POST['submit_comment']) && !empty($_POST['comment_text']) && !empty($_POST['rating'])) {
         $commentText = trim($_POST['comment_text']);
         $rating = (int)$_POST['rating'];
         $reviewerName = $_SESSION['nom'] ?? 'Anonyme';
 
-        // Insertion dans la table reviews
         $stmt = $pdo->prepare("INSERT INTO reviews (user_id, reviewer_name, rating, text) VALUES (?, ?, ?, ?)");
         $stmt->execute([$userId, $reviewerName, $rating, $commentText]);
 
-        // Incrémenter le compteur de commentaires
         $stmt = $pdo->prepare("UPDATE _user SET numero = numero + 1 WHERE user_id = ?");
         $stmt->execute([$userId]);
 
-        // Recharger les données mises à jour
         $providerData = getProviderData($pdo, $userId);
     }
-
 } catch (PDOException $e) {
     echo "<p style='color:red;'>Erreur : " . htmlspecialchars($e->getMessage()) . "</p>";
 }
@@ -73,6 +81,7 @@ if (isset($_GET['logout'])) {
     exit;
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="fr">
@@ -100,7 +109,7 @@ if (isset($_GET['logout'])) {
                 <div class="profile-stats">
                     <div class="stat-item">
                        <div class="stat-label">Commentaires</div>
-                       <div class="stat-value"><?php echo htmlspecialchars($providerData['comments'] ?? 0); ?></div>
+                       <div class="lstat-vaue"><?php echo htmlspecialchars($providerData['comments'] ?? 0); ?></div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-label">Vistes de profil</div>
@@ -152,6 +161,14 @@ if (isset($_GET['logout'])) {
                             <div class="review-header">
                                 <span class="reviewer-name"><?php echo htmlspecialchars($review['name']); ?></span>
                                 <span class="stars"><?php echo str_repeat('⭐', $review['rating']); ?></span>
+                                <?php
+                                //  if ($userId == $_SESSION['user_id']): 
+                                    ?>
+                            <!-- <a href="?delete_reviews=1" style="color: crimson; font-weight: bold;">🗑️ Supprimer tous mes commentaires</a> -->
+                        <?php 
+                        // endif;
+                         ?>
+
                             </div>
                             <p class="review-text"><?php echo htmlspecialchars($review['text']); ?></p>
                         </div>
