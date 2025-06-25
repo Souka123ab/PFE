@@ -2,171 +2,92 @@
 require_once '/xamppa/htdocs/PFE/include/conexion.php';
 session_start();
 
-// Redirect to login if user is not logged in
 if (!isset($_SESSION['user_id'])) {
     header("Location: /PFE/auth/seconnecter.php");
     exit;
 }
 
-// Check if id_service is provided in the URL
-if (!isset($_GET['id_service']) || empty($_GET['id_service'])) {
-    echo "<div class='error-message'>";
-    echo "<h2>Oops!</h2>";
-    echo "<p>Aucun service spécifié. Veuillez sélectionner un service.</p>";
-    echo "<a href='/PFE/services-user/services-user.php'>Retour aux services</a>";
-    echo "</div>";
+$user_id = $_SESSION['user_id'];
+$id_service = $_GET['id_service'] ?? null;
+$category = $_GET['service_name'] ?? 'Service';
+
+if (!$id_service) {
+    echo "Aucun service sélectionné.";
     exit;
 }
 
-$id_service = htmlspecialchars($_GET['id_service']);
+// Enregistrement commentaire
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['commentText'], $_POST['commentRating'])) {
+    $comment_text = $_POST['commentText'];
+    $rating = floatval($_POST['commentRating']);
 
-// Fetch service details from the service table
-$service = [];
-try {
-    $stmt = $pdo->prepare("SELECT s.*, u.nom AS provider_name 
-                          FROM service s 
-                          LEFT JOIN _user u ON s.user_id = u.user_id 
-                          WHERE s.id_service = ?");
-    $stmt->execute([$id_service]);
-    $service = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt = $pdo->prepare("INSERT INTO comments (user_id, id_service, comment_text, rating) VALUES (?, ?, ?, ?)");
+    $stmt->execute([$user_id, $id_service, $comment_text, $rating]);
+}
 
-    if (!$service) {
-        echo "<div class='error-message'>";
-        echo "<h2>Oops!</h2>";
-        echo "<p>Service non trouvé.</p>";
-        echo "<a href='/PFE/services-user/services-user.php'>Retour aux services</a>";
-        echo "</div>";
-        exit;
-    }
-} catch (PDOException $e) {
-    echo "<p style='color: red;'>Erreur lors de la récupération des détails du service : " . htmlspecialchars($e->getMessage()) . "</p>";
+// Récupération des commentaires
+$stmt = $pdo->prepare("SELECT c.comment_text AS comment, c.rating, c.date_comment, u.nom AS user 
+                      FROM comments c 
+                      JOIN _user u ON u.user_id = c.user_id 
+                      WHERE c.id_service = ?
+                      ORDER BY c.date_comment DESC");
+$stmt->execute([$id_service]);
+$comments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Infos du service
+$stmt = $pdo->prepare("SELECT s.*, u.nom AS provider_name FROM service s 
+                      LEFT JOIN _user u ON s.user_id = u.user_id 
+                      WHERE s.id_service = ?");
+$stmt->execute([$id_service]);
+$service = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$service) {
+    echo "Service non trouvé.";
     exit;
 }
-
-// Fetch category name based on id_categorie
-$category = '';
-try {
-    $stmt = $pdo->prepare("SELECT nom FROM categorie WHERE id_categorie = ? LIMIT 1");
-    $stmt->execute([$service['id_categorie']]);
-    $category = $stmt->fetchColumn() ?: 'Autres';
-} catch (PDOException $e) {
-    echo "<p style='color: red;'>Erreur lors de la récupération de la catégorie : " . htmlspecialchars($e->getMessage()) . "</p>";
-    $category = 'Autres';
-}
-
-// Initialize comments if not set
-if (!isset($_SESSION['comments'])) {
-    $_SESSION['comments'] = [
-        [
-            'user' => 'Soukayna Machraa',
-            'comment' => 'Très bon travail merci!',
-            'rating' => 4.5,
-            'time' => 'il y a 20 minutes'
-        ],
-        [
-            'user' => 'Soukayna Machraa',
-            'comment' => 'Très bon travail merci!',
-            'rating' => 4.0,
-            'time' => 'il y a 20 minutes'
-        ]
-    ];
-}
-$comments = &$_SESSION['comments'];
-
-// Format date
-$service_date = $service['date'] ? date('d/m/Y H:i:s', strtotime($service['date'])) : 'Date non disponible';
 ?>
 
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Détails du Service - <?php echo htmlspecialchars($service['titre']); ?></title>
     <link rel="stylesheet" href="detail.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
-        .comment-form {
-            display: none;
-            margin-bottom: 20px;
-            background-color: #e0f7fa;
-            padding: 15px;
-            border-radius: 5px;
-        }
-        .comment-form.show {
-            display: block;
-        }
-        .form-group {
-            margin-bottom: 10px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #424242;
-        }
+        .comment-form { display: none; background-color: #e0f7fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .comment-form.show { display: block; }
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; color: #424242; margin-bottom: 5px; }
         .form-group input, .form-group textarea {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
+            width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;
         }
-        .form-group input[type="number"] {
-            width: 50px;
-        }
+        .form-group input[type="number"] { width: 80px; }
         .submit-btn {
-            background-color: #00796b;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
+            background-color: #00796b; color: white; border: none;
+            padding: 10px 20px; border-radius: 5px; cursor: pointer;
         }
-        .submit-btn:hover {
-            background-color: #004d40;
-        }
+        .submit-btn:hover { background-color: #004d40; }
+        .comment-rating i { color: #ffc107; }
     </style>
 </head>
 <body>
     <?php require_once '../include/nav.php'; ?>
 
     <div class="container">
-        <!-- Category Header -->
+
         <div class="detail-category">
             <span class="category-tag"><?php echo htmlspecialchars($category); ?></span>
         </div>
 
-        <!-- Service Image -->
         <div class="detail-image-container">
             <img src="<?php echo htmlspecialchars($service['image'] ?: '/placeholder.svg'); ?>" alt="Image du service" class="detail-image">
         </div>
 
-        <!-- Action Buttons -->
         <div class="detail-action-buttons">
-            <button class="btn-commentaire" onclick="toggleCommentForm()">Commentaire</button>
-            <button class="btn-appel"><a href="tel:<?php echo htmlspecialchars($service['telephone']); ?>">Appel</a></button>
+            <button onclick="toggleCommentForm()">Commentaire</button>
+            <button><a href="tel:<?php echo htmlspecialchars($service['telephone']); ?>">Appel</a></button>
         </div>
-
-        <!-- Comment Form -->
-        <div class="comment-form" id="commentForm">
-            <form id="commentFormElement" onsubmit="submitComment(event)">
-                <div class="form-group">
-                    <label for="commentUser">Votre nom:</label>
-                    <input type="text" id="commentUser" name="commentUser" required>
-                </div>
-                <div class="form-group">
-                    <label for="commentText">Commentaire:</label>
-                    <textarea id="commentText" name="commentText" rows="4" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="commentRating">Note (1-5):</label>
-                    <input type="number" id="commentRating" name="commentRating" min="1" max="5" step="0.5" required>
-                </div>
-                <button type="submit" class="submit-btn">Envoyer</button>
-            </form>
-        </div>
-
-        <!-- Provider Info -->
         <div class="provider-detail-info">
             <img src="/placeholder.svg" alt="Avatar du prestataire" class="provider-avatar">
             <div class="provider-text">
@@ -175,18 +96,23 @@ $service_date = $service['date'] ? date('d/m/Y H:i:s', strtotime($service['date'
             </div>
         </div>
 
-        <!-- Description -->
-        <div class="detail-description-section">
-            <p class="detail-description"><?php echo htmlspecialchars($service['discription'] ?: 'Aucune description'); ?></p>
+
+        <!-- Formulaire de commentaire -->
+        <div class="comment-form" id="commentForm">
+            <form method="POST" id="commentFormElement">
+                <div class="form-group">
+                    <label for="commentText">Commentaire :</label>
+                    <textarea id="commentText" name="commentText" rows="4" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="commentRating">Note (1 à 5) :</label>
+                    <input type="number" id="commentRating" name="commentRating" min="1" max="5" step="0.5" required>
+                </div>
+                <button type="submit" class="submit-btn">Envoyer</button>
+            </form>
         </div>
 
-        <!-- Contact Section -->
-        <div class="detail-contact-section">
-            <h3>Contact</h3>
-            <p class="detail-phone"><i class="fas fa-phone"></i> <a href="tel:<?php echo htmlspecialchars($service['telephone']); ?>"><?php echo htmlspecialchars($service['telephone']); ?></a></p>
-        </div>
-
-        <!-- Comments Section -->
+        <!-- Affichage des commentaires -->
         <div class="detail-comments-section">
             <h3>Commentaires</h3>
             <div id="commentsContainer">
@@ -195,21 +121,17 @@ $service_date = $service['date'] ? date('d/m/Y H:i:s', strtotime($service['date'
                         <div class="comment-content">
                             <div class="comment-header">
                                 <span class="comment-user"><?php echo htmlspecialchars($comment['user']); ?></span>
-                                <span class="comment-time"><?php echo htmlspecialchars($comment['time']); ?></span>
+                                <span class="comment-time"><?php echo date('d/m/Y H:i', strtotime($comment['date_comment'])); ?></span>
                             </div>
                             <p class="comment-text"><?php echo htmlspecialchars($comment['comment']); ?></p>
                             <div class="comment-rating">
                                 <?php
                                 $stars = floor($comment['rating']);
-                                $halfStar = $comment['rating'] - $stars >= 0.5;
+                                $half = $comment['rating'] - $stars >= 0.5;
                                 for ($i = 1; $i <= 5; $i++) {
-                                    if ($i <= $stars) {
-                                        echo '<i class="fas fa-star"></i>';
-                                    } elseif ($i == $stars + 1 && $halfStar) {
-                                        echo '<i class="fas fa-star-half-alt"></i>';
-                                    } else {
-                                        echo '<i class="far fa-star"></i>';
-                                    }
+                                    if ($i <= $stars) echo '<i class="fas fa-star"></i>';
+                                    elseif ($i == $stars + 1 && $half) echo '<i class="fas fa-star-half-alt"></i>';
+                                    else echo '<i class="far fa-star"></i>';
                                 }
                                 ?>
                             </div>
@@ -219,91 +141,31 @@ $service_date = $service['date'] ? date('d/m/Y H:i:s', strtotime($service['date'
             </div>
         </div>
 
-        <!-- Demand Button -->
-        <div class="detail-footer-actions">
-            <a href="demander.php?service_name=<?php echo urlencode($category); ?>&id_categorie=<?php echo urlencode($service['id_categorie']); ?>&phone=<?php echo urlencode($service['telephone']); ?>" class="btn-demander">Demander</a>
+        <!-- Infos du prestataire -->
+        
+        <!-- Description -->
+        <div class="detail-description-section">
+            <p><?php echo htmlspecialchars($service['discription'] ?: 'Aucune description.'); ?></p>
         </div>
+
+        <!-- Contact -->
+        <div class="detail-contact-section">
+            <h3>Contact</h3>
+            <p><i class="fas fa-phone"></i> <a href="tel:<?php echo htmlspecialchars($service['telephone']); ?>"><?php echo htmlspecialchars($service['telephone']); ?></a></p>
+        </div>
+
+        <!-- Demande -->
+        <div class="detail-footer-actions">
+            <a href="demander.php?service_name=<?php echo urlencode($category); ?>&id_categorie=<?php echo urlencode($service['id_categorie']); ?>
+            &phone=<?php echo urlencode($service['telephone']);
+             ?>" class="btn-demander">Demander</a>
+        </div>
+
     </div>
 
     <script>
         function toggleCommentForm() {
-            const form = document.getElementById('commentForm');
-            form.classList.toggle('show');
-        }
-
-        function submitComment(event) {
-            event.preventDefault();
-
-            const user = document.getElementById('commentUser').value;
-            const text = document.getElementById('commentText').value;
-            const rating = parseFloat(document.getElementById('commentRating').value);
-            const time = 'il y a quelques secondes';
-
-            if (user && text && !isNaN(rating)) {
-                const newComment = {
-                    user: user,
-                    comment: text,
-                    rating: rating,
-                    time: time
-                };
-
-                // Add comment to the DOM
-                const commentsContainer = document.getElementById('commentsContainer');
-                const commentDiv = document.createElement('div');
-                commentDiv.className = 'comment-item';
-                commentDiv.innerHTML = `
-                    <div class="comment-content">
-                        <div class="comment-header">
-                            <span class="comment-user">${user}</span>
-                            <span class="comment-time">${time}</span>
-                        </div>
-                        <p class="comment-text">${text}</p>
-                        <div class="comment-rating">
-                            ${generateStars(rating)}
-                        </div>
-                    </div>
-                `;
-                commentsContainer.appendChild(commentDiv);
-
-                // Update session storage (simulating persistence)
-                let comments = <?php echo json_encode($comments); ?>;
-                comments.push(newComment);
-
-                // Send to server (placeholder, replace with actual API call)
-                fetch(window.location.href, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: 'update_comments=' + encodeURIComponent(JSON.stringify(comments))
-                }).then(response => {
-                    if (response.ok) {
-                        console.log('Comment saved to session');
-                    }
-                }).catch(error => console.error('Error:', error));
-
-                // Clear form
-                document.getElementById('commentFormElement').reset();
-                toggleCommentForm();
-            } else {
-                alert('Veuillez remplir tous les champs correctement.');
-            }
-        }
-
-        function generateStars(rating) {
-            let stars = '';
-            const fullStars = Math.floor(rating);
-            const hasHalfStar = rating - fullStars >= 0.5;
-            for (let i = 1; i <= 5; i++) {
-                if (i <= fullStars) {
-                    stars += '<i class="fas fa-star"></i>';
-                } else if (i == fullStars + 1 && hasHalfStar) {
-                    stars += '<i class="fas fa-star-half-alt"></i>';
-                } else {
-                    stars += '<i class="far fa-star"></i>';
-                }
-            }
-            return stars;
+            document.getElementById('commentForm').classList.toggle('show');
         }
     </script>
 </body>

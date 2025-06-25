@@ -35,7 +35,11 @@ if ($userId !== $_SESSION['user_id']) {
 
 // Fonction pour charger les données
 function getProviderData($pdo, $userId) {
-    $stmt = $pdo->prepare("SELECT nom, ville AS profession, numero AS comments, views, email AS about, numero AS phone FROM _user WHERE user_id = ?");
+    $stmt = $pdo->prepare("SELECT _user.*, COUNT(comments.comment_id) AS comment_count
+        FROM _user 
+        LEFT JOIN service ON _user.user_id = service.user_id 
+        LEFT JOIN comments ON service.id_service = comments.id_service 
+        WHERE _user.user_id = ?");
     $stmt->execute([$userId]);
     $data = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
@@ -82,7 +86,6 @@ if (isset($_GET['logout'])) {
 }
 ?>
 
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -96,7 +99,7 @@ if (isset($_GET['logout'])) {
 
     <main class="main-content">
         <div class="container">
-            <!-- Logout Button -->
+
             <?php if ($userId == $_SESSION['user_id']): ?>
                 <a href="?logout=1" class="logout-btn">Déconnexion</a>
             <?php endif; ?>
@@ -108,41 +111,37 @@ if (isset($_GET['logout'])) {
                 
                 <div class="profile-stats">
                     <div class="stat-item">
-                       <div class="stat-label">Commentaires</div>
-                       <div class="lstat-vaue"><?php echo htmlspecialchars($providerData['comments'] ?? 0); ?></div>
+                        <div class="stat-label">Commentaires</div>
+                        <div class="stat-value"><?php echo htmlspecialchars($providerData['comment_count'] ?? 0); ?></div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-label">Vistes de profil</div>
+                        <div class="stat-label">Visites de profil</div>
                         <div class="stat-value"><?php echo htmlspecialchars($providerData['views'] ?? 0); ?></div>
                     </div>
                 </div>
-                
+
                 <div class="profile-actions">
                     <button class="action-btn btn-comments" id="comments-btn">⭐ Commentaires</button>
                     <button class="action-btn btn-call" id="call-btn">📞 Appel</button>
                     <button class="action-btn btn-favorite">❤️ Favori</button>
                 </div>
-                
-                <!-- Phone number display (hidden by default) -->
+
                 <div id="phone-display" style="display:none; margin-top:10px; font-size:1.2em; color:#333;">
                     Numéro de téléphone : <?php echo htmlspecialchars($providerData['phone'] ?? 'Non disponible'); ?>
                 </div>
-                
-                <!-- Comment input form (hidden by default) -->
+
                 <form id="comment-form" method="POST" style="display:none; margin-top:20px;">
                     <div style="margin-bottom:10px;">
                         <label for="rating">Note (1-5) :</label>
                         <select name="rating" id="rating" required>
                             <option value="">Choisir une note</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
+                            <?php for ($i = 1; $i <= 5; $i++): ?>
+                                <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
+                            <?php endfor; ?>
                         </select>
                     </div>
                     <div style="margin-bottom:10px;">
-                        <textarea name="comment_text" id="comment-text" rows="4" style="width:100%;" placeholder="Écrivez votre commentaire..." required></textarea>
+                        <textarea name="comment_text" rows="4" style="width:100%;" placeholder="Écrivez votre commentaire..." required></textarea>
                     </div>
                     <button type="submit" name="submit_comment" class="action-btn">Soumettre le commentaire</button>
                 </form>
@@ -155,24 +154,27 @@ if (isset($_GET['logout'])) {
 
             <section class="reviews-section" id="reviews-section">
                 <h2 class="section-title">Avis</h2>
-                <div class="reviews-grid">
-                    <?php foreach ($providerData['reviews'] as $review): ?>
-                        <div class="review-card">
-                            <div class="review-header">
-                                <span class="reviewer-name"><?php echo htmlspecialchars($review['name']); ?></span>
-                                <span class="stars"><?php echo str_repeat('⭐', $review['rating']); ?></span>
-                                <?php
-                                //  if ($userId == $_SESSION['user_id']): 
-                                    ?>
-                            <!-- <a href="?delete_reviews=1" style="color: crimson; font-weight: bold;">🗑️ Supprimer tous mes commentaires</a> -->
-                        <?php 
-                        // endif;
-                         ?>
 
+                <?php if ($userId == $_SESSION['user_id'] && count($providerData['reviews']) > 0): ?>
+                    <div style="margin-bottom: 10px;">
+                        <a href="?delete_reviews=1" style="color: crimson; font-weight: bold;">🗑️ Supprimer tous mes avis</a>
+                    </div>
+                <?php endif; ?>
+
+                <div class="reviews-grid">
+                    <?php if (empty($providerData['reviews'])): ?>
+                        <p>Aucun avis pour le moment.</p>
+                    <?php else: ?>
+                        <?php foreach ($providerData['reviews'] as $review): ?>
+                            <div class="review-card">
+                                <div class="review-header">
+                                    <span class="reviewer-name"><?php echo htmlspecialchars($review['name']); ?></span>
+                                    <span class="stars"><?php echo str_repeat('⭐', (int)$review['rating']); ?></span>
+                                </div>
+                                <p class="review-text"><?php echo htmlspecialchars($review['text']); ?></p>
                             </div>
-                            <p class="review-text"><?php echo htmlspecialchars($review['text']); ?></p>
-                        </div>
-                    <?php endforeach; ?>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             </section>
 
@@ -182,7 +184,6 @@ if (isset($_GET['logout'])) {
                     <span class="time-period">Matin</span>
                     <span class="time-period">Après-midi</span>
                 </div>
-                
                 <div class="hours-table">
                     <?php foreach ($providerData['hours'] as $day => $slots): ?>
                         <div class="hours-row">
@@ -208,33 +209,17 @@ if (isset($_GET['logout'])) {
             const phoneDisplay = document.getElementById('phone-display');
             const commentForm = document.getElementById('comment-form');
 
-            // Toggle comment form and scroll to reviews section
             commentsBtn.addEventListener('click', function() {
                 commentForm.style.display = commentForm.style.display === 'none' ? 'block' : 'none';
                 document.getElementById('reviews-section').scrollIntoView({ behavior: 'smooth' });
-                this.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                    this.style.transform = '';
-                }, 150);
             });
 
-            // Show/hide phone number
             callBtn.addEventListener('click', function() {
                 phoneDisplay.style.display = phoneDisplay.style.display === 'none' ? 'block' : 'none';
-                this.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                    this.style.transform = '';
-                }, 150);
             });
 
-            // Handle favorite button click
-            const favoriteBtn = document.querySelector('.btn-favorite');
-            favoriteBtn.addEventListener('click', function() {
-                console.log('Favorite button clicked');
-                this.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                    this.style.transform = '';
-                }, 150);
+            document.querySelector('.btn-favorite').addEventListener('click', function() {
+                alert("Fonction favori à implémenter.");
             });
         });
     </script>

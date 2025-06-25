@@ -55,7 +55,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $time_service = $_POST['service-time'] ?? '';
     $phone = $_POST['phone'] ?? '';
     $ville = $_POST['city'] ?? '';
-    $status = $_POST['status'] ?? '';
+    // $status = $_POST['status'] ?? '';
 
     // Combine date and time into a single datetime string
     if (!empty($date_service) && !empty($time_service)) {
@@ -66,17 +66,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $date_service = null;
     }
 
-    if (!empty($id_categorie) && !empty($id_service) && $date_service && !empty($phone) && !empty($ville) && !empty($status)) {
+    if (!empty($id_categorie) && !empty($id_service) && $date_service && !empty($phone) && !empty($ville) ) {
         try {
             $stmt = $pdo->prepare("
                 INSERT INTO reservation (
-                    date_reservation, date_service, status, user_id, id_service, id_categorie, phone, ville
+                    date_reservation, date_service, user_id, id_service, id_categorie, phone, ville
                 ) VALUES (
-                    NOW(), ?, ?, ?, ?, ?, ?, ?
+                    NOW(), ?, ?, ?, ?, ?, ?
                 )
             ");
             $stmt->execute([
-                $date_service, $status, $user_id,
+                $date_service, $_SESSION['user_id'],
                 $id_service, $id_categorie, $phone, $ville
             ]);
 
@@ -164,15 +164,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 </div>
 
                 <!-- Statut -->
-                <div class="form-group">
-                    <label for="status">Statut</label>
-                    <select id="status" name="status" class="form-select" required>
-                        <option value="">Sélectionner le statut</option>
-                        <option value="en_attente" <?= ($status == 'en_attente') ? 'selected' : '' ?>>En attente</option>
-                        <option value="valide" <?= ($status == 'valide') ? 'selected' : '' ?>>Validé</option>
-                        <option value="refuse" <?= ($status == 'refuse') ? 'selected' : '' ?>>Refusé</option>
-                    </select>
-                </div>
+
 
                 <!-- Bouton -->
                 <button type="submit" class="validate-btn">Valider</button>
