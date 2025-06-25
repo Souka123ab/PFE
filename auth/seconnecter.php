@@ -87,14 +87,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <?php endif; ?>
 
             <form class="login-form" id="login-form" method="post" >
-                <button type="button" class="google-btn" disabled>
-                    <!-- Bouton Google désactivé -->
-                    <svg width="20" height="20" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="..."/>
-                    </svg>
-                    <span>Commencez avec Google (Bientôt disponible)</span>
-                </button>
-
+               
                 <div class="divider"><span>Ou</span></div>
 
                 <div class="form-group">

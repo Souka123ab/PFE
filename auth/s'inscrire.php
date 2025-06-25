@@ -1,29 +1,35 @@
 <?php
-
 session_start();
 if (isset($_SESSION['user_id'])) {
     header("Location: ../acceuil.php");
     exit;
 }
 
-// Affichage des erreurs (à désactiver en production)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// Connexion à la base de données
 require_once '../include/conexion.php';
 
 $success_message = '';
 $error_message = '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    if (isset($_POST['google_signup']) && $_POST['google_signup'] == 'true') {
-        $first_name = $_POST['firstName'] ?? 'Google';
-        $last_name = $_POST['lastName'] ?? 'User';
-        $email = $_POST['email'] ?? 'user@google.com';
-        $numero = $_POST['numero'] ?? '1234567890';
-        $password_hashed = password_hash(uniqid('google_pass_'), PASSWORD_DEFAULT);
+    $first_name = $_POST['firstName'] ?? '';
+    $last_name = $_POST['lastName'] ?? '';
+    $email = $_POST['email'] ?? '';
+    $numero = $_POST['numero'] ?? '';
+    $password = $_POST['password'] ?? '';
+    $confirm_password = $_POST['confirmPassword'] ?? '';
+
+    if (empty($first_name) || empty($last_name) || empty($email) || empty($numero) || empty($password) || empty($confirm_password)) {
+        $error_message = "Tous les champs sont requis.";
+    } elseif ($password !== $confirm_password) {
+        $error_message = "Les mots de passe ne correspondent pas.";
+    } elseif (strlen($password) > 8) {
+        $error_message = "Le mot de passe ne doit pas dépasser 8 caractères.";
+    } else {
+        $password_hashed = password_hash($password, PASSWORD_DEFAULT);
 
         $check_sql = "SELECT user_id FROM _user WHERE email = ?";
         $check_stmt = $pdo->prepare($check_sql);
@@ -43,61 +49,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     'email' => $email,
                     'password' => $password_hashed,
                 ]);
-                $success_message = "Compte Google créé avec succès.";
+                header('Location: seconnecter.php');
+                exit;
             }
         } catch (PDOException $e) {
-            error_log("Erreur Google Signup: " . $e->getMessage());
-            $error_message = "Erreur lors de la création du compte: " . $e->getMessage();
-        }
-
-    } else {
-        $first_name = $_POST['firstName'] ?? '';
-        $last_name = $_POST['lastName'] ?? '';
-        $email = $_POST['email'] ?? '';
-        $numero = $_POST['numero'] ?? '';
-        $password = $_POST['password'] ?? '';
-        $confirm_password = $_POST['confirmPassword'] ?? '';
-
-        if (empty($first_name) || empty($last_name) || empty($email) || empty($numero) || empty($password) || empty($confirm_password)) {
-            $error_message = "Tous les champs sont requis.";
-        } elseif ($password !== $confirm_password) {
-            $error_message = "Les mots de passe ne correspondent pas.";
-        } elseif (strlen($password) > 8) {
-            $error_message = "Le mot de passe ne doit pas dépasser 8 caractères.";
-        } else {
-            $password_hashed = password_hash($password, PASSWORD_DEFAULT);
-
-            $check_sql = "SELECT user_id FROM _user WHERE email = ?";
-            $check_stmt = $pdo->prepare($check_sql);
-
-            try {
-                $check_stmt->execute([$email]);
-                $existing_user = $check_stmt->fetch();
-                
-
-                if ($existing_user) {
-                    $error_message = "Un compte avec cette adresse e-mail existe déjà.";
-                } else {
-                    $sql = "INSERT INTO _user (nom, numero, email, password) VALUES (:nom, :numero, :email, :password)";
-                    $stmt = $pdo->prepare($sql);
-                    $stmt->execute([
-                        'nom' => $first_name . ' ' . $last_name,
-                        'numero' => $numero,
-                        'email' => $email,
-                        'password' => $password_hashed,
-                    ]);
-                    $success_message = "Compte créé avec succès.";
-                     header('Location: seconnecter.php');
-                    exit;
-                }
-            } catch (PDOException $e) {
-                error_log("Erreur Signup: " . $e->getMessage());
-                $error_message = "Erreur lors de l'inscription: " . $e->getMessage();
-            }
+            error_log("Erreur Signup: " . $e->getMessage());
+            $error_message = "Erreur lors de l'inscription: " . $e->getMessage();
         }
     }
 }
 ?>
+
 
 
 
@@ -128,15 +90,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <div class="server-message error"><?php echo $error_message; ?></div>
             <?php endif; ?>
 
-            <button type="button" class="google-btn" id="googleBtn">
-                <svg width="20" height="20" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                <span>Commencez avec Google</span>
-            </button>
+            
             <div class="divider">Ou</div>
             <form id="signupForm" method="post">
                 <div class="form-group">

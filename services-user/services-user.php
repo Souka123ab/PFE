@@ -265,7 +265,7 @@ if (empty($services)) {
                             echo '<a href="demander.php?service_name=' . urlencode($cat_name) . '&id_categorie=' . $service['id_categorie'] . '&phone=' . urlencode($service['telephone']) . '&id_service=' . $service['id_service'] . '" class="btn-demander"><i class="fas fa-paper-plane"></i> Demander</a>';
                         }
 
-                        echo '<a href="detail.php?' . $params . '" class="btn-detail">Détail</a>';
+                        echo '<a href="detail.php?<?php echo http_build_query([...]); ?>' . $params . '" class="btn-detail">Détail</a>';
                         echo '</div></div>';
                         echo '</div></div></div>';
                     }
