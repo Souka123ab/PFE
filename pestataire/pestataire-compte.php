@@ -2,17 +2,34 @@
 session_start();
 require_once '/xamppa/htdocs/PFE/include/conexion.php';
 
-// Redirection si l'utilisateur n'est pas connecté
+// Generate CSRF token if not set
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+// Session timeout (30 minutes)
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 1800)) {
+    session_unset();
+    session_destroy();
+    header("Location: /PFE/auth/seconnecter.php");
+    exit;
+}
+$_SESSION['last_activity'] = time();
+
+// Redirect if user is not logged in
 if (!isset($_SESSION['user_id'])) {
     header("Location: /PFE/auth/seconnecter.php");
     exit;
 }
 
-// Déterminer l'ID du prestataire
+// Determine provider ID
 $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : $_SESSION['user_id'];
 
-// Supprimer tous les commentaires du prestataire s'il a cliqué sur le bouton
-if (isset($_GET['delete_reviews']) && $_SESSION['user_id'] == $userId) {
+// Handle delete reviews action
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_reviews']) && $_SESSION['user_id'] == $userId) {
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        die("CSRF token validation failed.");
+    }
     try {
         $stmt = $pdo->prepare("DELETE FROM reviews WHERE user_id = ?");
         $stmt->execute([$userId]);
@@ -23,45 +40,56 @@ if (isset($_GET['delete_reviews']) && $_SESSION['user_id'] == $userId) {
         header("Location: ?user_id=$userId");
         exit;
     } catch (PDOException $e) {
-        echo "<p style='color:red;'>Erreur lors de la suppression des commentaires : " . htmlspecialchars($e->getMessage()) . "</p>";
+        $error = "Erreur lors de la suppression des commentaires : " . htmlspecialchars($e->getMessage());
     }
 }
 
-// Incrémenter les vues uniquement si ce n'est pas son propre profil
+// Increment views if not viewing own profile
 if ($userId !== $_SESSION['user_id']) {
     $stmt = $pdo->prepare("UPDATE _user SET views = views + 1 WHERE user_id = ?");
     $stmt->execute([$userId]);
 }
 
-// Fonction pour charger les données
+// Function to fetch provider data
 function getProviderData($pdo, $userId) {
-    $stmt = $pdo->prepare("SELECT _user.*, COUNT(comments.comment_id) AS comment_count
-        FROM _user 
-        LEFT JOIN service ON _user.user_id = service.user_id 
-        LEFT JOIN comments ON service.id_service = comments.id_service 
-        WHERE _user.user_id = ?");
-    $stmt->execute([$userId]);
-    $data = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    try {
+        $stmt = $pdo->prepare("
+            SELECT u.*, COUNT(r.id) AS comment_count
+            FROM _user u
+            LEFT JOIN reviews r ON u.user_id = r.user_id
+            WHERE u.user_id = ?
+            GROUP BY u.user_id
+        ");
+        $stmt->execute([$userId]);
+        $data = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
-    $data['hours'] = [
-        'Lundi' => ['09:00 - 12:00', '14:00 - 16:00'],
-        'Mardi' => ['09:00 - 12:00', '14:00 - 16:00'],
-        'Mercredi' => ['09:00 - 12:00', '14:00 - 16:00'],
-        'Jeudi' => ['09:00 - 12:00', '14:00 - 16:00'],
-        'Vendredi' => ['09:00 - 12:00', '14:00 - 16:00']
-    ];
+        $stmt = $pdo->prepare("SELECT reviewer_name AS name, rating, text FROM reviews WHERE user_id = ? ORDER BY created_at DESC");
+        $stmt->execute([$userId]);
+        $data['reviews'] = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
-    $stmt = $pdo->prepare("SELECT reviewer_name AS name, rating, text FROM reviews WHERE user_id = ? ORDER BY created_at DESC");
-    $stmt->execute([$userId]);
-    $data['reviews'] = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $data['hours'] = [
+            'Lundi' => ['09:00 - 12:00', '14:00 - 16:00'],
+            'Mardi' => ['09:00 - 12:00', '14:00 - 16:00'],
+            'Mercredi' => ['09:00 - 12:00', '14:00 - 16:00'],
+            'Jeudi' => ['09:00 - 12:00', '14:00 - 16:00'],
+            'Vendredi' => ['09:00 - 12:00', '14:00 - 16:00']
+        ];
 
-    return $data;
+        return $data;
+    } catch (PDOException $e) {
+        die("Erreur lors de la récupération des données : " . htmlspecialchars($e->getMessage()));
+    }
 }
 
+// Handle comment submission
 try {
     $providerData = getProviderData($pdo, $userId);
 
-    if (isset($_POST['submit_comment']) && !empty($_POST['comment_text']) && !empty($_POST['rating'])) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_comment']) && !empty($_POST['comment_text']) && !empty($_POST['rating'])) {
+        if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+            die("CSRF token validation failed.");
+        }
+
         $commentText = trim($_POST['comment_text']);
         $rating = (int)$_POST['rating'];
         $reviewerName = $_SESSION['nom'] ?? 'Anonyme';
@@ -69,16 +97,16 @@ try {
         $stmt = $pdo->prepare("INSERT INTO reviews (user_id, reviewer_name, rating, text) VALUES (?, ?, ?, ?)");
         $stmt->execute([$userId, $reviewerName, $rating, $commentText]);
 
-        $stmt = $pdo->prepare("UPDATE _user SET numero = numero + 1 WHERE user_id = ?");
-        $stmt->execute([$userId]);
+        $stmt = $pdo->prepare("UPDATE _user SET numero = (SELECT COUNT(*) FROM reviews WHERE user_id = ?) WHERE user_id = ?");
+        $stmt->execute([$userId, $userId]);
 
-        $providerData = getProviderData($pdo, $userId);
+        $providerData = getProviderData($pdo, $userId); // Refresh data to update comment_count
     }
 } catch (PDOException $e) {
-    echo "<p style='color:red;'>Erreur : " . htmlspecialchars($e->getMessage()) . "</p>";
+    $error = "Erreur : " . htmlspecialchars($e->getMessage());
 }
 
-// Déconnexion
+// Handle logout
 if (isset($_GET['logout'])) {
     session_destroy();
     header("Location: /PFE/auth/seconnecter.php");
@@ -99,6 +127,9 @@ if (isset($_GET['logout'])) {
 
     <main class="main-content">
         <div class="container">
+            <?php if (isset($error)): ?>
+                <p style="color:red;"><?php echo $error; ?></p>
+            <?php endif; ?>
 
             <?php if ($userId == $_SESSION['user_id']): ?>
                 <a href="?logout=1" class="logout-btn">Déconnexion</a>
@@ -121,16 +152,22 @@ if (isset($_GET['logout'])) {
                 </div>
 
                 <div class="profile-actions">
-                    <button class="action-btn btn-comments" id="comments-btn">⭐ Commentaires</button>
-                    <button class="action-btn btn-call" id="call-btn">📞 Appel</button>
-                    <button class="action-btn btn-favorite">❤️ Favori</button>
+                    <button class="action-btn btn-comments" id="comments-btn" aria-label="Toggle comment form">⭐ Commentaires</button>
+                    <button class="action-btn btn-call" id="call-btn" aria-label="Toggle phone number visibility" aria-controls="phone-display" <?php echo empty($providerData['phone']) ? 'disabled' : ''; ?>>📞 Appel</button>
+                    <button class="action-btn btn-favorite" aria-label="Add to favorites">❤️ Favori</button>
                 </div>
 
                 <div id="phone-display" style="display:none; margin-top:10px; font-size:1.2em; color:#333;">
-                    Numéro de téléphone : <?php echo htmlspecialchars($providerData['phone'] ?? 'Non disponible'); ?>
+                    Numéro de téléphone : 
+                    <?php if (!empty($providerData['phone'])): ?>
+                        <a href="tel:<?php echo htmlspecialchars($providerData['phone']); ?>"><?php echo htmlspecialchars($providerData['phone']); ?></a>
+                    <?php else: ?>
+                        Non disponible
+                    <?php endif; ?>
                 </div>
 
                 <form id="comment-form" method="POST" style="display:none; margin-top:20px;">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                     <div style="margin-bottom:10px;">
                         <label for="rating">Note (1-5) :</label>
                         <select name="rating" id="rating" required>
@@ -155,10 +192,12 @@ if (isset($_GET['logout'])) {
             <section class="reviews-section" id="reviews-section">
                 <h2 class="section-title">Avis</h2>
 
-                <?php if ($userId == $_SESSION['user_id'] && count($providerData['reviews']) > 0): ?>
-                    <div style="margin-bottom: 10px;">
-                        <a href="?delete_reviews=1" style="color: crimson; font-weight: bold;">🗑️ Supprimer tous mes avis</a>
-                    </div>
+                <?php if ($userId == $_SESSION['user_id'] && !empty($providerData['reviews'])): ?>
+                    <form action="?user_id=<?php echo $userId; ?>" method="POST" onsubmit="return confirm('Voulez-vous vraiment supprimer tous vos avis ?');">
+                        <input type="hidden" name="delete_reviews" value="1">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+                        <button type="submit" style="color: crimson; font-weight: bold; border: none; background: none; cursor: pointer;">🗑️ Supprimer tous mes avis</button>
+                    </form>
                 <?php endif; ?>
 
                 <div class="reviews-grid">

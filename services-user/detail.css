@@ -216,3 +216,14 @@
 .error-message a:hover {
     text-decoration: underline;
 }
+.detail-action-buttons button{
+padding: 10px 15px;
+    border: none;
+    border-radius: 3px;
+    background: #757575;
+    color: white;
+}
+.detail-contact-section a{
+    color: #00796b;
+    text-decoration: none;
+}

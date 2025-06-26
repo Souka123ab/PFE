@@ -86,7 +86,6 @@ if (!$service) {
 
         <div class="detail-action-buttons">
             <button onclick="toggleCommentForm()">Commentaire</button>
-            <button><a href="tel:<?php echo htmlspecialchars($service['telephone']); ?>">Appel</a></button>
         </div>
         <div class="provider-detail-info">
             <img src="/placeholder.svg" alt="Avatar du prestataire" class="provider-avatar">
@@ -94,6 +93,10 @@ if (!$service) {
                 <h2><?php echo htmlspecialchars($service['provider_name'] ?: 'Prestataire'); ?></h2>
                 <p class="provider-location"><?php echo htmlspecialchars($service['ville'] ?: 'Non spécifiée'); ?> <i class="fas fa-map-marker-alt"></i></p>
             </div>
+        </div>
+ <div class="detail-description-section">
+            <h3>Description</h3>
+            <p><?php echo htmlspecialchars($service['discription'] ?: 'Aucune description.'); ?></p>
         </div>
 
 
@@ -144,10 +147,7 @@ if (!$service) {
         <!-- Infos du prestataire -->
         
         <!-- Description -->
-        <div class="detail-description-section">
-            <p><?php echo htmlspecialchars($service['discription'] ?: 'Aucune description.'); ?></p>
-        </div>
-
+       
         <!-- Contact -->
         <div class="detail-contact-section">
             <h3>Contact</h3>

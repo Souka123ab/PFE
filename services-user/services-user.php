@@ -1,24 +1,23 @@
 <?php
-session_start();
-require_once '/xamppa/htdocs/PFE/include/conexion.php';
+session_start(); // *** Katbda session bach tkhlli user connecté
 
-// Redirection si l'utilisateur n'est pas connecté
+require_once '/xamppa/htdocs/PFE/include/conexion.php'; // *** Katconnecta la base de données
+
+// *** Ila user ma connectach, katsiftoh l page de login
 if (!isset($_SESSION['user_id'])) {
     header("Location: /PFE/auth/seconnecter.php");
     exit;
 }
 
-// Check if user is a prestataire
+// *** Katjib user_id mn session
 $user_id = $_SESSION['user_id'];
+
+// *** Katsawal wach had l'utilisateur prestataire
 $stmt = $pdo->prepare("SELECT is_prestataire FROM _user WHERE user_id = ?");
 $stmt->execute([$user_id]);
-$is_prestataire = $stmt->fetchall();
+$is_prestataire = $stmt->fetchAll(); // *** Khass tverifi wach kayn fih 1 f variable
 
-// Debugging line to check if the user is a prestataire
-// foreach ($is_prestataire as $ishg){
-//     var_dump($ishg["date"]);
-// }
-
+// --- Messages de session (service ajouté, modifié, supprimé)
 if (isset($_SESSION['service_ajoute'])) {
     echo "<p style='color: green;'>Service \"" . htmlspecialchars($_SESSION['service_ajoute']['titre']) . "\" ajouté le " . htmlspecialchars($_SESSION['service_ajoute']['date']) . ".</p>";
     unset($_SESSION['service_ajoute']);
@@ -32,17 +31,17 @@ if (isset($_SESSION['service_supprime'])) {
     unset($_SESSION['service_supprime']);
 }
 
-// Récupération des catégories
+// --- Récupération des catégories
 $category_map = [];
 try {
-    $stmt = $pdo->query("SELECT id_categorie, nom FROM categorie");
-    $category_map = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+    $stmt = $pdo->query("SELECT id_categorie, nom FROM categorie"); // *** Katjib kolchi mn table categorie
+    $category_map = $stmt->fetchAll(PDO::FETCH_KEY_PAIR); // *** Format: [id_categorie => nom]
 } catch (PDOException $e) {
     echo "<p style='color: red;'>Erreur lors de la récupération des catégories : " . htmlspecialchars($e->getMessage()) . "</p>";
     exit;
 }
 
-// Récupération des services
+// --- Récupération de tous les services (triés par date décroissante)
 $services = [];
 try {
     $stmt = $pdo->query("SELECT id_service, titre, prix, user_id, id_categorie, image, telephone, date, discription, ville FROM service ORDER BY date DESC");
@@ -52,11 +51,11 @@ try {
     exit;
 }
 
-// Vérifier si des services existent
+// --- Vérifie wach kaynin des services
 if (empty($services)) {
     echo "<p>Aucun service trouvé.</p>";
 } else {
-    // Regrouper les services par catégorie
+    // --- Katgroupi les services selon la catégorie
     $services_by_category = [];
     foreach ($services as $service) {
         $cat_name = $category_map[$service['id_categorie']] ?? 'Autres';
@@ -64,6 +63,7 @@ if (empty($services)) {
     }
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="fr">
@@ -198,6 +198,7 @@ if (empty($services)) {
         <div class="container">
             <?php
             if (!empty($services_by_category)) {
+                            // *** Design w icones selon catégorie
                 $category_styles = [
                     'Plomberie' => ['color' => '#4a90e2', 'icon' => 'fa-wrench'],
                     'Jardinage' => ['color' => '#4caf50', 'icon' => 'fa-seedling'],
@@ -208,6 +209,8 @@ if (empty($services)) {
                 ];
 
                 foreach ($services_by_category as $cat_name => $cat_services) {
+                                    // *** Katbda section dyal chaque catégorie
+
                     $style = $category_styles[$cat_name] ?? ['color' => '#4a90e2', 'icon' => 'fa-wrench'];
                     $cat_id = array_search($cat_name, $category_map) ?: 0;
                     echo '<section class="service-section" data-category="' . htmlspecialchars(strtolower($cat_name)) . '">';
@@ -216,7 +219,10 @@ if (empty($services)) {
                     echo '</div><div class="services-grid">';
 
                     foreach ($cat_services as $service) {
+                                            // *** Katformat date dyal service
+
                         $service_date = $service['date'] ? date('d/m/Y H:i:s', strtotime($service['date'])) : 'Date non disponible';
+                                           // *** Katjib nom dyal prestataire li 3ndo lservice
                         try {
                             $stmt_user = $pdo->prepare("SELECT nom FROM _user WHERE user_id = ?");
                             $stmt_user->execute([$service['user_id']]);
@@ -224,6 +230,8 @@ if (empty($services)) {
                         } catch (PDOException $e) {
                             $provider_name = 'Prestataire';
                         }
+                                // *** Katdir lien detail.php m3a les données dans URL
+
                         $params = http_build_query([
                             'category' => $cat_name,
                             'image' => $service['image'] ?: '/placeholder.svg',
@@ -238,12 +246,14 @@ if (empty($services)) {
                             'ville' => $service['ville'] ?? 'Non spécifiée',
                             'date' => $service_date
                         ]);
+                                            // --- Card du service
                         echo '<div class="service-card">';
                         echo '<div class="service-box" data-title="' . htmlspecialchars(strtolower($service['titre'])) . '">';
 
                         echo '<div class="service-image">';
                         echo '<img src="' . htmlspecialchars($service['image'] ?: '/placeholder.svg') . '" alt="Image service">';
                         echo '</div>';
+                    // --- Infos du prestataire
 
                         echo '<div class="service-content"><div class="provider-info">';
                         echo '<div class="profile-avatar">
@@ -251,9 +261,11 @@ if (empty($services)) {
                 </div>';
                         echo '<div><h4>' . htmlspecialchars($provider_name) . '</h4><div class="rating"><span class="stars">★★★★★</span><span class="rating-count">4.8</span></div></div>';
                         echo '</div>';
+                    // --- Affichage prix + boutons d'action
 
                         echo '<span class="price">' . htmlspecialchars($service['prix']) . ' DH</span>';
                         echo '<div class="service-footer"><div class="actions">';
+                    // --- Actions selon si l'utilisateur connecté howa li 3ndo lservice
 
                         if ($service['user_id'] == $_SESSION['user_id']) {
                             if ($is_prestataire == 1) {
@@ -263,6 +275,8 @@ if (empty($services)) {
                                 echo '<p class="non-prestataire-message">Devenir prestataire pour gérer ce service.</p>';
                             }
                         } else {
+                                                    // --- Bouton Favori et Demander
+
                             echo '<a href="/PFE/favourite/favourite.php?id_service=' . $service['id_service'] . '" class="btn-favorite"><i class="fas fa-heart"></i> Favori</a>';
                             echo '<a href="demander.php?service_name=' . urlencode($cat_name) . '&id_categorie=' . $service['id_categorie'] . '&phone=' . urlencode($service['telephone']) . '&id_service=' . $service['id_service'] . '" class="btn-demander"><i class="fas fa-paper-plane"></i> Demander</a>';
                         }
