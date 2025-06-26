@@ -1,53 +1,68 @@
 <?php
-session_start();
-require_once '/xamppa/htdocs/PFE/include/conexion.php';
+session_start(); 
+// * Katbda session bach t9der tkhli user mconnecté
+
+require_once '/xamppa/htdocs/PFE/include/conexion.php'; 
+// * Katd5ol fichier dyal connexion m3a base de données
 
 // Redirection si l'utilisateur n'est pas connecté
-
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['user_id'])) { 
+    // * Ila ma kaynash user mconnecti, radi ndir redirect l login
     header("Location: /PFE/auth/seconnecter.php");
     exit;
 }
+
+// Vérifier si id_service m3tah f URL
 if(isset($_GET['id_service'])){
    $id_service = $_GET['id_service'];
    $stmt = $pdo->prepare("SELECT * FROM service WHERE id_service = ?");
    $stmt->execute([$id_service]);
    $service = $stmt->fetch(PDO::FETCH_ASSOC);
-}else {
- header("Location: /PFE/services-user/services-user.php");
-exit;
+} else {
+   // * Ila ma 3tawnach id_service f URL, ndir redirect l liste dyal services dyal user
+   header("Location: /PFE/services-user/services-user.php");
+   exit;
 }
 
+// Récupération des données depuis URL ou variables
+$category = $_GET['service_name'] ?? '';  
+// * Katkhod isem service/category mn URL, ila ma kaynach khaliha fargha
 
-
-// Récupération via URL
-$category = $_GET['service_name'] ?? '';
 $id_categorie = isset($_GET['id_categorie']) && is_numeric($_GET['id_categorie']) ? $_GET['id_categorie'] : '';
-$id_service = isset($_GET['id_service']) && is_numeric($_GET['id_service']) ? $_GET['id_service'] : '';
-$phone = $_GET['phone'] ?? '';
-$ville = $_GET['ville'] ?? ''; // Ajout de la récupération de ville si passée
+// * Kat5tar id dyal categorie ila kayn w valid (numerique)
 
-// Validate id_categorie
+$id_service = isset($_GET['id_service']) && is_numeric($_GET['id_service']) ? $_GET['id_service'] : '';
+// * Kat5tar id dyal service men URL ila kayn w valid
+
+$phone = $_GET['phone'] ?? '';
+// * Katkhod phone mn URL ila kayn
+
+$ville = $_GET['ville'] ?? ''; 
+// * Katkhod ville mn URL ila kayn
+
+// Validation dyal id_categorie f base
 if ($id_categorie) {
     $stmt = $pdo->prepare("SELECT id_categorie FROM categorie WHERE id_categorie = ?");
     $stmt->execute([$id_categorie]);
     if (!$stmt->fetch()) {
+        // * Ila ma tla3hach categorie, kanb9aw khaliin id_categorie w n3tiw message error
         $id_categorie = '';
         echo "<p class='error'>❌ Catégorie invalide.</p>";
     }
 }
 
-// Validate id_service
+// Validation dyal id_service f base
 if ($id_service) {
     $stmt = $pdo->prepare("SELECT id_service FROM service WHERE id_service = ?");
     $stmt->execute([$id_service]);
     if (!$stmt->fetch()) {
+        // * Ila ma tla3hach service, kanb9aw khaliin id_service w n3tiw message error
         $id_service = '';
         echo "<p class='error'>❌ Service invalide.</p>";
     }
 }
 
-// Traitement du formulaire
+// Traitement formulaire quand submit POST
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $id_categorie = $_POST['id_categorie'] ?? '';
     $id_service = $_POST['id_service'] ?? '';
@@ -55,9 +70,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $time_service = $_POST['service-time'] ?? '';
     $phone = $_POST['phone'] ?? '';
     $ville = $_POST['city'] ?? '';
-    // $status = $_POST['status'] ?? '';
+    // $status = $_POST['status'] ?? ''; // (optionnel, pas utilisé ici)
 
-    // Combine date and time into a single datetime string
+    // Combinaison date + heure en datetime unique
     if (!empty($date_service) && !empty($time_service)) {
         $date_service = date('Y-m-d H:i:s', strtotime("$date_service $time_service"));
     } elseif (!empty($date_service)) {
@@ -66,8 +81,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $date_service = null;
     }
 
-    if (!empty($id_categorie) && !empty($id_service) && $date_service && !empty($phone) && !empty($ville) ) {
+    // Validation que tous les champs obligatoires sont remplis
+    if (!empty($id_categorie) && !empty($id_service) && $date_service && !empty($phone) && !empty($ville)) {
         try {
+            // Insertion réservation dans base
             $stmt = $pdo->prepare("
                 INSERT INTO reservation (
                     date_reservation, date_service, user_id, id_service, id_categorie, phone, ville
@@ -79,12 +96,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $date_service, $_SESSION['user_id'],
                 $id_service, $id_categorie, $phone, $ville
             ]);
-
             echo "<p class='success'>✅ Service réservé avec succès !</p>";
         } catch (PDOException $e) {
+            // Affichage erreur SQL si problème
             echo "<p class='error'>❌ Erreur : " . htmlspecialchars($e->getMessage()) . "</p>";
         }
     } else {
+        // Message si un ou plusieurs champs obligatoires manquent
         echo "<p class='warning'>❗ Veuillez remplir tous les champs.</p>";
     }
 }
@@ -101,6 +119,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <body>
 
 <?php require_once '../include/nav.php'; ?>
+<!-- * Nav bar externe -->
 
 <main class="main">
     <div class="container">
@@ -108,14 +127,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <h1 class="form-title">Validation des Services</h1>
 
             <form class="validation-form" method="post">
-                <!-- Nom du service -->
+                <!-- Nom du service (readonly) -->
                 <div class="form-group">
                     <label>Service demandé</label>
                     <input type="text" class="form-input" value="<?= htmlspecialchars($category) ?>" readonly>
                     <input type="hidden" name="service_name" value="<?= htmlspecialchars($category) ?>">
                 </div>
 
-                <!-- Choix de la catégorie -->
+                <!-- Choix catégorie -->
                 <div class="form-group">
                     <label for="id_categorie">Catégorie</label>
                     <select name="id_categorie" id="id_categorie" class="form-select" required>
@@ -130,22 +149,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     </select>
                 </div>
 
-                <!-- Service ID (hidden) -->
+                <!-- ID service caché -->
                 <input type="hidden" name="id_service" value="<?= htmlspecialchars($id_service) ?>">
 
-                <!-- Date du service -->
+                <!-- Date service -->
                 <div class="form-group">
                     <label for="service-date">Date du service</label>
                     <input type="date" id="service-date" name="service-date" class="form-input" required>
                 </div>
 
-                <!-- Heure du service -->
+                <!-- Heure service -->
                 <div class="form-group">
                     <label for="service-time">Heure du service</label>
                     <input type="time" id="service-time" name="service-time" class="form-input" required>
                 </div>
 
-                <!-- Numéro de téléphone -->
+                <!-- Téléphone -->
                 <div class="form-group">
                     <label for="phone">Numéro de téléphone</label>
                     <input type="tel" id="phone" name="phone" class="form-input" value="<?= htmlspecialchars($phone) ?>" required>
@@ -163,10 +182,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     </select>
                 </div>
 
-                <!-- Statut -->
-
-
-                <!-- Bouton -->
+                <!-- Bouton validation -->
                 <button type="submit" class="validate-btn">Valider</button>
             </form>
         </div>
@@ -174,6 +190,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </main>
 
 <script>
+    // Validation JS simple pour inputs obligatoires
     document.addEventListener("DOMContentLoaded", () => {
         const form = document.querySelector(".validation-form");
         form.addEventListener("submit", (e) => {
@@ -181,13 +198,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             let isValid = true;
             inputs.forEach(input => {
                 if (!input.value.trim()) {
-                    input.style.borderColor = "#ff4757";
+                    input.style.borderColor = "#ff4757"; // rouge si vide
                     isValid = false;
                 } else {
-                    input.style.borderColor = "#ccc";
+                    input.style.borderColor = "#ccc"; // gris si ok
                 }
             });
-            if (!isValid) e.preventDefault();
+            if (!isValid) e.preventDefault(); // bloquer submit si un champ vide
         });
     });
 </script>

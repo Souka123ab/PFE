@@ -1,63 +1,81 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // *** Mli page katsali chargement, katbda l'execution dyal les scripts
+// 🌟 Mlli l page katsali tchargi (DOM), katbda l code
+document.addEventListener('DOMContentLoaded', function () {
 
-    const keywordInput = document.getElementById('search-keyword'); // *** L'input li katktbi fih smiya dyal service
-    const searchButton = document.querySelector('.btn-search'); // *** Bouton rechercher
-    const serviceBoxes = document.querySelectorAll('.service-box'); // *** Kol service (box) f page
-    const categoryItems = document.querySelectorAll('.category-item'); // *** Les catégories (plomberie, jardinage...)
-    const serviceSections = document.querySelectorAll('.service-section'); // *** Les sections li regroupo services par catégorie
+    // 🌟 Katjib les éléments li f page
+    const keywordInput = document.getElementById('search-keyword'); // 🔍 input dyal l keyword (mot-clé)
+    const searchButton = document.querySelector('.btn-search'); // 🔘 bouton dyal la recherche
+    const serviceBoxes = document.querySelectorAll('.service-box'); // 📦 kol box dyal service
+    const categoryItems = document.querySelectorAll('.category-item'); // 📂 les boutons dyal les catégories
+    const serviceSections = document.querySelectorAll('.service-section'); // 🧩 les sections li fihom services regroupés b catégorie
 
-    // *** Fonction katrja3 chi texte en minuscules w sans espaces zyada (utilité: comparaison)
+    // 🌟 Fonction katsayb string : kats7ab les espaces w katdir lowercase
     function normalize(str) {
         return str.trim().toLowerCase();
     }
 
-    // *** Fonction katfiltri services selon chi mot clé (ex: "jardin")
+    // 🌟 Fonction li katfiltri services b mot-clé (keyword)
     function filterServices() {
-        const keyword = normalize(keywordInput.value); // *** Katchouf chno ketba user
+        const keyword = keywordInput ? normalize(keywordInput.value) : ''; // 💬 katsayb l mot-clé
 
         serviceBoxes.forEach(box => {
-            const title = box.dataset.title; // *** Katjib le titre dyal service mn l'attribut "data-title"
-            const matchesKeyword = !keyword || title.includes(keyword); // *** Katvérifi wach ltitre fih dak keyword
-            box.style.display = matchesKeyword ? 'block' : 'none'; // *** Ila kayn => affichi, ila la => hide
+            const title = box.dataset.title || ''; // 🏷️ katjib l title mn data-title
+            const matchesKeyword = !keyword || title.includes(keyword); // ✔️ katsheki wach l title fih keyword
+            box.style.display = matchesKeyword ? 'block' : 'none'; // 👁️ ila kayn kayban, ila ma kaynch kayt7aja
         });
     }
 
-    // *** Fonction li katfiltri services selon catégorie (ex: plomberie)
+    // 🌟 Fonction li katfiltri services b catégorie
     function filterByCategory(category) {
         serviceSections.forEach(section => {
-            const sectionCategory = section.dataset.category; // *** Katjib nom dyal catégorie (plomberie...)
-            section.style.display = (category === 'all' || sectionCategory === category) ? 'block' : 'none'; // *** Kataffichi seulement had catégorie
+            const sectionCategory = section.dataset.category; // 📂 katjib catégorie dyal section
+            section.style.display = (category === 'all' || sectionCategory === category) ? 'block' : 'none'; // 👁️ kayaffichi ghir li katmatchi
         });
 
-        keywordInput.value = ''; // *** Katvider input bach tb9a f coherence
-        filterServices(); // *** Katredemarre la recherche b keyword (vide f had l7ala)
+        // 🔄 kinmas7o l keyword m input
+        if (keywordInput) keywordInput.value = '';
+
+        // 🔁 kankamlo b filter dyal keyword (par sécurité)
+        filterServices();
     }
 
-    // *** Action mli user ydkhl mot clé w yclicki sur bouton recherche
-    searchButton.addEventListener('click', filterServices);
+    // 🌟 Mlli l user ydkhl click 3la bouton recherche
+    if (searchButton) {
+        searchButton.addEventListener('click', filterServices);
+    }
 
-    // *** Action mli user ytklli "Entrée" f clavier
-    keywordInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault(); // *** Katpreventi reload dyal page
-            filterServices(); // *** Katfiltri les services
-        }
-    });
+    // 🌟 Mlli l user ydkhl "Entrée" f champ dyal keyword
+    if (keywordInput) {
+        keywordInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // ❌ ma kaykhalich l form itsift
+                filterServices();   // 🔍 kaydir recherche b keyword
+            }
+        });
+    }
 
-    // *** Katgoli l'interface: ila user dkliki 3la catégorie, filtri les services
+    // 🌟 Kol bouton catégorie kaydir filtrage 3la click
     categoryItems.forEach(item => {
         item.addEventListener('click', () => {
-            const category = item.dataset.category; // *** Katjib nom catégorie (min attribut data-category)
-            filterByCategory(category); // *** Katdir filtrage selon had nom
+            const category = item.dataset.category; // 📂 katjib catégorie
+
+            // ✨ Katdir mise à jour de la classe active
+            categoryItems.forEach(ci => ci.classList.remove('active'));
+            item.classList.add('active');
+
+            // 📛 katfiltri b had catégorie
+            filterByCategory(category);
         });
     });
 
-    // *** Katpreventi mn l'effet de clic li kayji mn parent li fih service-card
-    // *** C'est utile bach bouton li f dak card ykhdmo normal w maydirch clic sur toute la card
+    // 🌟 Mlli ykoun click f chi bouton (edit, delete...), ma kaydirch chi action f parent
     document.querySelectorAll('.btn-edit, .btn-delete, .btn-favorite, .btn-demander, .btn-detail').forEach(button => {
-        button.addEventListener('click', (event) => {
-            event.stopPropagation(); // *** Katwa9af propagation dial clic vers parent
+        button.addEventListener('click', event => {
+            event.stopPropagation(); // 🛑 kaywa9af propagation dyal click
         });
     });
+
+    // 🌟 par défaut, katklik 3la première catégorie bach ybanou les services
+    if (categoryItems.length > 0) {
+        categoryItems[0].click(); // 🔁 kifach katbda l page, kayaffichi la première catégorie
+    }
 });
